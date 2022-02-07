@@ -1,0 +1,7 @@
+// Find where USB's are mounted in your organization
+
+DeviceEvents
+| where Timestamp > ago(1d) 
+| where ActionType == "UsbDriveMounted"
+| extend DriveLetter = tostring(todynamic(AdditionalFields).DriveLetter)
+| extend ProductName = tostring(todynamic(AdditionalFields).ProductName)
