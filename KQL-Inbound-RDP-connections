@@ -1,0 +1,12 @@
+// Find ALL inbound RDP connections
+
+DeviceNetworkEvents
+| where LocalPort == "3389"
+| where ActionType == "InboundConnectionAccepted"
+
+// Find all RDP connections from public internet
+DeviceNetworkEvents
+| where LocalPort == "3389"
+| where ActionType == "InboundConnectionAccepted"
+| where RemoteIPType != "Private"
+
