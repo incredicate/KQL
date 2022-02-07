@@ -1,0 +1,8 @@
+// Use query below to find devices vulnerable to CVE-2021-44228, with a public facing IP address
+
+DeviceTvmSoftwareVulnerabilities
+| where CveId in ("CVE-2021-44228")
+| join kind = inner(DeviceEvents
+| distinct LocalIP, DeviceName, DeviceId)
+on $left.DeviceId == $right.DeviceId
+| distinct DeviceName, LocalIP
