@@ -1,0 +1,9 @@
+// Checks for links that have been opened that could be malicious through a legitimate domain (https://lots-project.com/)
+let urls = externaldata(UserId:string)[@"https://raw.githubusercontent.com/incredicate/Misc/main/urls.txt"];
+DeviceEvents
+| where ActionType == "BrowserLaunchedToOpenUrl" and RemoteUrl has_any (urls)
+| where isnotempty(RemoteUrl)
+| extend AF=parse_json(AdditionalFields)
+| where isnotempty(AF.SafeLinksMessageId)
+| extend MessageId = AF.SafeLinksMessageId
+| project-reorder RemoteUrl
