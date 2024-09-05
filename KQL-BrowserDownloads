@@ -1,0 +1,11 @@
+// List all the files downloaded using (popular) browsers
+DeviceFileEvents 
+| where Timestamp > ago(30d)
+| where 
+    InitiatingProcessFolderPath endswith @"windows\system32\browser_broker.exe" 
+    or InitiatingProcessFolderPath endswith @"program files\internet explorer\iexplore.exe"
+    or InitiatingProcessFolderPath endswith @"program files (x86)\internet explorer\iexplore.exe"
+    or (InitiatingProcessFileName =~ "chrome.exe")
+    or (InitiatingProcessFileName =~ "firefox.exe" and (FileName !endswith ".js" or FolderPath !has "profile"))
+| project Timestamp, DeviceName, InitiatingProcessFileName, FileName, FolderPath, FileOriginUrl, FileOriginReferrerUrl
+| where FileName has ".exe" // and DeviceName endswith "p1x"
