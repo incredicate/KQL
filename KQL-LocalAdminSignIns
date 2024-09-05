@@ -1,0 +1,20 @@
+let DC = DeviceNetworkEvents
+| where LocalPort == "88"
+| summarize arg_max(Timestamp, *) by DeviceId;
+let OSTypes = 
+DeviceInfo
+| summarize arg_max(Timestamp, *) by DeviceId
+| extend Type = case(OSPlatform contains "Windows" and OSPlatform contains "Server" and DeviceId in(DC), "DC",
+                     OSPlatform contains "Windows" and OSPlatform contains "Server" and DeviceId !in(DC), "Server", 
+                     OSPlatform contains "Windows" and OSPlatform !contains "Server", "Client",
+                     OSPlatform == "Linux", "Linux",
+                     OSPlatform == "macOS", "macOS",
+                       "Other")
+| project DeviceId, Type, OSPlatform
+;
+DeviceLogonEvents
+| where IsLocalAdmin == true
+| where LogonType in~("Interactive","RemoteInteractive","Unlock")
+| summarize FirstSeen = min(Timestamp), arg_max(LastObserverd = Timestamp, *) by AccountSid, DeviceId
+| extend Duration = LastObserverd - FirstSeen
+| join kind=inner OSTypes on DeviceId
