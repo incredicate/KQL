@@ -1,0 +1,6 @@
+// This query looks for attempts to disable or tamper with security software, such as stopping or uninstalling antivirus or EDR software. It'll also show services being stopped.
+DeviceProcessEvents
+| where FileName in ("taskkill.exe", "wmic.exe", "sc.exe")
+| where InitiatingProcessCommandLine has_any ("disable", "stop", "uninstall")
+| project Timestamp, DeviceName, ProcessCommandLine, InitiatingProcessAccountName
+| order by Timestamp desc
