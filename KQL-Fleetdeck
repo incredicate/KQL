@@ -1,0 +1,39 @@
+// Although Fleetdeck is a legitimate tool, it's being used more and more as a RAT or even as part of a C2. If your environment does not use Fleetdeck, it can be of great value to add this as a detection.
+let FleetDeckAgentFiles = dynamic([
+    "C:\\Program Files (x86)\\FleetDeck Agent\\fleetdeck_agent_svc.exe",
+    "C:\\Program Files (x86)\\FleetDeck Agent\\20220420175353\\fleetdeck_agent.exe",
+    "C:\\Program Files (x86)\\FleetDeck Agent\\20220420175353\\fd_agent.dll",
+    "C:\\Program Files (x86)\\FleetDeck Agent\\deployment.json",
+    "C:\\Program Files (x86)\\FleetDeck Agent\\latest.json"
+]);
+let SuspiciousProcesses = dynamic([
+    "fleetdeck-agent-MCMPzMTtAsmxbcMVj92Nsb.exe",
+    "fleetdeck_agent_svc.exe",
+    "fleetdeck_agent.exe",
+    "tacticalrmm.exe",
+    "MeshAgent.exe"
+]);
+let SuspiciousDomains = dynamic([
+    "agent.fleetdeck.io",
+    "agentinstall.fleetdeck.io",
+    "agentupdate.fleetdeck.io",
+    "agentregister.fleetdeck.io",
+    "agentmqtt.fleetdeck.io"
+]);
+union
+    DeviceFileEvents,
+    DeviceProcessEvents,
+    DeviceNetworkEvents,
+    DeviceRegistryEvents
+| where Timestamp > ago(30d)
+| where 
+    (ActionType == "FileCreated" and FileName in~ (FleetDeckAgentFiles))
+    or
+    (ActionType == "ProcessCreated" and FileName in~ (SuspiciousProcesses))
+    or
+    (ActionType == "ConnectionSuccess" and RemoteUrl in~ (SuspiciousDomains))
+    or
+    (FileName =~ "powershell.exe" and ProcessCommandLine contains "FleetDeck Agent Service")
+    or
+    (RegistryKey contains "HKLM\\SOFTWARE\\FleetDeck" or RegistryKey contains "HKLM\\SYSTEM\\CurrentControlSet\\Services\\FleetDeck")
+| project Timestamp, DeviceName, ActionType, FileName, ProcessCommandLine, RemoteUrl, RegistryKey, RegistryValueName
