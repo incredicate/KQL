@@ -1,0 +1,36 @@
+//Queries check for UPN in URL's (that are clicked) that are Base64 encoded (common technique). Second query also checks for login events in a short time period after the click (more reliable for true positives)
+
+let Length = 20;
+UrlClickEvents
+| extend AccountUpnLower = tolower(AccountUpn)
+| extend EncodedUpn = base64_encode_tostring(AccountUpnLower)
+| extend ShortUpn = substring(EncodedUpn,0,Length)
+| extend AccountDomain = tostring(split(AccountUpnLower,"@")[-1])
+| extend EncodedDomain = base64_encode_tostring(AccountDomain)
+| extend DomainLength = strlen(EncodedDomain)-8
+| extend ShortDomain = substring(EncodedDomain, 4, DomainLength)
+| where UrlChain contains ShortUpn or UrlChain contains ShortDomain
+| sort by Timestamp desc
+
+
+// Includes login event right after click event
+let Length = 20;
+UrlClickEvents
+| where Timestamp > ago(7d)
+| extend AccountUpnLower = tolower(AccountUpn)
+| extend EncodedUpn = base64_encode_tostring(AccountUpnLower)
+| extend ShortUpn = substring(EncodedUpn,0,Length)
+| extend AccountDomain = tostring(split(AccountUpnLower,"@")[-1])
+| extend EncodedDomain = base64_encode_tostring(AccountDomain)
+| extend DomainLength = strlen(EncodedDomain)-8
+| extend ShortDomain = substring(EncodedDomain, 4, DomainLength)
+| where UrlChain contains ShortUpn or UrlChain contains ShortDomain
+| join kind=inner (
+    IdentityLogonEvents
+    | where LogonType in("Login:login","Login:reprocess","SAS:BeginAuth")
+    | extend AccountUpnLower = tolower(AccountUpn)
+) on AccountUpnLower
+| extend Delta = datetime_diff('minute', Timestamp, Timestamp1)
+| where Delta between (0 .. 15)
+| summarize arg_min(Delta,*) by NetworkMessageId
+| join EmailEvents on NetworkMessageId
