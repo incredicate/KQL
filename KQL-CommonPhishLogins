@@ -1,0 +1,10 @@
+// Look for failed and successful login attempts on Office 365 Exchange Online + OfficeHome 
+// that do not originate from NL [Errorcode 0 = successful]
+// These locations are commonly used straight after a succesful phishing attempt
+AADSignInEventsBeta
+| where ApplicationId == "00000002-0000-0ff1-ce00-000000000000" or ApplicationId == "4765445b-32c6-49b0-83e6-1d93765276ca" //Exchange 365 + OfficeHome
+| where LogonType != "noninteractive"
+| where Country != "NL"
+//| where IPAddress matches regex @"^(\d{1,3}\.){3}\d{1,3}$"
+| project Timestamp,ErrorCode, Application, ApplicationId, AccountObjectId, AccountDisplayName, Country, IPAddress, SessionId
+| sort by Timestamp desc
